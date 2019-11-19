@@ -35,11 +35,22 @@ def home():
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
+        f"-----------------------------------------------------------------------------------<br/>"
+        f"All precipitation value for each specific date<br/>"
         f"/api/v1.0/precipitation<br/>"
+        f"-----------------------------------------------------------------------------------<br/>"
+        f"List of Stations from the dataset<br/>"
         f"/api/v1.0/stations<br/>"
+        f"-----------------------------------------------------------------------------------<br/>"
+        f"Dates and temperature observations from a year from the last data point<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/date<br/>"
-        f"/api/v1.0/start/end"
+        f"-----------------------------------------------------------------------------------<br/>"
+        f"list of the minimum, average and max temperature for a given start<br/>"
+        f"/api/v1.0/start_date<br/>"
+        f"-----------------------------------------------------------------------------------<br/>"
+        f"list of the minimum, average and max temperature for a given start-end range<br/>"
+        f"/api/v1.0/start_date/end_date<br/>"
+        f"-----------------------------------------------------------------------------------<br/>"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -48,7 +59,7 @@ def names():
     session = Session(engine)
 
     """Return a list of all percipitation"""
-    # Query all passengers
+    # Query all percipitation
     results = session.query(Measurement.date, Measurement.prcp).order_by(Measurement.date).all()
 
     session.close()
@@ -65,13 +76,14 @@ def names():
             dd[j].append(k)
     
     return jsonify(dd)
+
 @app.route("/api/v1.0/stations")
 def stations():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     """Return a list of all percipitation"""
-    # Query all passengers
+    # Query all stations
     results = session.query(Station.station,Station.name).group_by(Station.station).all()
 
     session.close()
@@ -92,7 +104,7 @@ def tobs():
     session = Session(engine)
 
     """Return a list of all percipitation"""
-    # Query all passengers
+    # Query all last year temperature
     last_day = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
     year_ago =  dt.date(2017,8,23)- dt.timedelta(365)
 
@@ -112,42 +124,48 @@ def tobs():
 
     return jsonify(last_year_temp)
 
-@app.route("/api/v1.0/<date>")
-def start(date):
+@app.route("/api/v1.0/<start_date>")
+def start(start_date):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     """Return a list of all percipitation"""
-    # Query all passengers
-    date = "2017-01-01"
+    # Query temperature statistics from start date given
+    
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
-    results = session.query(*sel).filter(Measurement.date >= date).all()
+    results = session.query(*sel).filter(Measurement.date >= start_date).all()
     
     session.close()
 
     # Convert list of tuples into normal list
-    startonly = list(np.ravel(results))
+    startonly = {}
+    for mi, ave, ma in results:
+        startonly["Minimum Temperature"] = mi
+        startonly["Average Temperature"] = ave
+        startonly["Maximum Temperature"] = ma
 
     return jsonify(startonly)
 
-@app.route("/api/v1.0/<start>/<end>")
-def startend(start,end):
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def startend(start_date,end_date):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     """Return a list of all percipitation"""
-    # Query all passengers
-    start = "2017-01-01"
-    end = "2017-02-02"
+    # Query temperature statistics with start and end date
     
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
-    results = session.query(*sel).filter(Measurement.date >= start).\
-        filter(Measurement.date <= end).all()
+    results = session.query(*sel).filter(Measurement.date >= start_date).\
+        filter(Measurement.date <= end_date).all()
     
     session.close()
 
     # Convert list of tuples into normal list
-    startend = list(np.ravel(results))
+    startend = {}
+    for mi, ave, ma in results:
+        startend["Minimum Temperature"] = mi
+        startend["Average Temperature"] = ave
+        startend["Maximum Temperature"] = ma
 
     return jsonify(startend)
 
