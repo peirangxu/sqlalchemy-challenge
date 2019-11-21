@@ -106,7 +106,12 @@ def tobs():
     last_day = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
     year_ago =  dt.date(2017,8,23)- dt.timedelta(365)
 
+    most_active_station = session.query(Measurement.station).\
+        group_by(Measurement.station).\
+        order_by(func.count(Measurement.prcp).desc()).first()
+
     results = session.query(Measurement.date,Measurement.tobs).\
+        filter(Measurement.station == most_active_station[0]).\
         filter(Measurement.date <= last_day).\
         filter(Measurement.date >= year_ago).all()
 
