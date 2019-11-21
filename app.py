@@ -60,22 +60,20 @@ def names():
 
     """Return a list of all percipitation"""
     # Query all percipitation
-    results = session.query(Measurement.date, Measurement.prcp).order_by(Measurement.date).all()
+    results = session.query(Measurement.station,Measurement.date, Measurement.prcp).\
+        order_by(Measurement.date).all()
 
     session.close()
 
+    all_prcp = {}
+    for i in range(len(results)):
+        if results[i][1] != results[i-1][1]:
+            all_prcp[results[i][1]]={}
+            all_prcp[results[i][1]][results[i][0]] = results[i][2]
+        else:
+            all_prcp[results[i-1][1]][results[i][0]] = results[i][2]
     
-    all_prcp = []
-    for date,prcp in results:
-        prcp_dict = {}
-        prcp_dict[date] = prcp
-        all_prcp.append(prcp_dict)
-    dd = defaultdict(list)
-    for i in range(len(all_prcp)):
-        for j,k in chain(all_prcp[i].items()):
-            dd[j].append(k)
-    
-    return jsonify(dd)
+    return jsonify(all_prcp)
 
 @app.route("/api/v1.0/stations")
 def stations():
