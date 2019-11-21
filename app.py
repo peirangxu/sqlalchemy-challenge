@@ -4,8 +4,7 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
-from collections import defaultdict
-from itertools import chain
+import pandas as pd
 
 from flask import Flask, jsonify
 
@@ -46,10 +45,10 @@ def home():
         f"/api/v1.0/tobs<br/>"
         f"-----------------------------------------------------------------------------------<br/>"
         f"list of the minimum, average and max temperature for a given start<br/>"
-        f"/api/v1.0/start_date<br/>"
+        f"/api/v1.0/start/<start><br/>"
         f"-----------------------------------------------------------------------------------<br/>"
         f"list of the minimum, average and max temperature for a given start-end range<br/>"
-        f"/api/v1.0/start_date/end_date<br/>"
+        f"/api/v1.0/start<start>/end<end><br/>"
         f"-----------------------------------------------------------------------------------<br/>"
     )
 
@@ -127,8 +126,8 @@ def tobs():
 
     return jsonify(last_year_temp)
 
-@app.route("/api/v1.0/<start_date>")
-def start(start_date):
+@app.route("/api/v1.0/start/<start>")
+def start(start):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
@@ -136,7 +135,7 @@ def start(start_date):
     # Query temperature statistics from start date given
     
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
-    results = session.query(*sel).filter(Measurement.date >= start_date).all()
+    results = session.query(*sel).filter(Measurement.date >= start).all()
     
     session.close()
 
@@ -149,8 +148,8 @@ def start(start_date):
 
     return jsonify(startonly)
 
-@app.route("/api/v1.0/<start_date>/<end_date>")
-def startend(start_date,end_date):
+@app.route("/api/v1.0/start<start>/end<end>")
+def startend(start,end):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
@@ -158,8 +157,8 @@ def startend(start_date,end_date):
     # Query temperature statistics with start and end date
     
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
-    results = session.query(*sel).filter(Measurement.date >= start_date).\
-        filter(Measurement.date <= end_date).all()
+    results = session.query(*sel).filter(Measurement.date >= start).\
+        filter(Measurement.date <= end).all()
     
     session.close()
 
@@ -171,6 +170,6 @@ def startend(start_date,end_date):
         startend["Maximum Temperature"] = ma
 
     return jsonify(startend)
-
+    
 if __name__ == '__main__':
     app.run(debug=True)
